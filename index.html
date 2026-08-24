@@ -227,12 +227,46 @@
     line-height:1.3;
     min-height:28px;
   }
-  .readout{
+  .readout-wrap{
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    gap:2px;
+    min-height:24px;
+  }
+  .readout-input{
+    width:60px;
+    text-align:right;
+    background:transparent;
+    border:none;
+    border-bottom:1px dashed transparent;
+    color:var(--blue);
     font-family:'IBM Plex Mono',monospace;
     font-size:18px;
     font-weight:600;
-    color:var(--blue);
-    min-height:24px;
+    -moz-appearance:textfield;
+    padding:0;
+  }
+  .readout-input::-webkit-outer-spin-button,
+  .readout-input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  .readout-input:hover:not(:disabled){
+    border-bottom-color:var(--rule-strong);
+  }
+  .readout-input:focus{
+    outline:none;
+    border-bottom-color:var(--blue);
+  }
+  .readout-input:disabled{
+    color:var(--ink-dim);
+  }
+  .readout-unit{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    font-weight:600;
+    color:var(--ink-dim);
   }
   .fader-track{
     position:relative;
@@ -510,7 +544,7 @@
     <div class="field">
       <label for="targetPct" id="targetLabel">Target total increase (4 yrs)</label>
       <div class="input-wrap" id="targetWrap">
-        <input id="targetPct" type="number" value="20" step="1">
+        <input id="targetPct" type="number" value="20" step="1" min="0" max="100">
         <span class="unit">%</span>
       </div>
     </div>
@@ -578,7 +612,10 @@
   function factorOf(rate){ return 1 + rate/100; }
   function rateOf(factor){ return (factor - 1) * 100; }
   function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-  function targetMultiplier(){ return 1 + (parseFloat(targetPctEl.value) || 0) / 100; }
+  function targetMultiplier(){
+    const v = clamp(parseFloat(targetPctEl.value) || 0, 0, 100);
+    return 1 + v/100;
+  }
 
   function evenSplit(){
     const M = targetMultiplier();
@@ -658,9 +695,19 @@
       lbl.className = 'channel-label';
       lbl.textContent = label;
 
-      const readout = document.createElement('div');
-      readout.className = 'readout';
+      const readoutWrap = document.createElement('div');
+      readoutWrap.className = 'readout-wrap';
+      const readout = document.createElement('input');
+      readout.type = 'number';
+      readout.step = '0.25';
+      readout.className = 'readout-input';
       readout.id = 'readout-' + i;
+      readout.setAttribute('aria-label', label + ' raise percent, editable');
+      const readoutUnit = document.createElement('span');
+      readoutUnit.className = 'readout-unit';
+      readoutUnit.textContent = '%';
+      readoutWrap.appendChild(readout);
+      readoutWrap.appendChild(readoutUnit);
 
       const track = document.createElement('div');
       track.className = 'fader-track';
@@ -700,7 +747,7 @@
       lockBtn.setAttribute('aria-pressed','false');
 
       channel.appendChild(lbl);
-      channel.appendChild(readout);
+      channel.appendChild(readoutWrap);
       channel.appendChild(track);
       channel.appendChild(stepper);
       channel.appendChild(wageMini);
@@ -717,6 +764,18 @@
 
       minusBtn.addEventListener('click', ()=> stepSlider(i, -0.25));
       plusBtn.addEventListener('click', ()=> stepSlider(i, 0.25));
+
+      readout.addEventListener('change', ()=>{
+        const val = parseFloat(readout.value);
+        rates[i] = isNaN(val) ? rates[i] : clamp(val, MIN_RATE, MAX_RATE);
+        if (mode === 'target'){
+          rebalance(currentFixedIdxs(i));
+        }
+        render();
+      });
+      readout.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter') readout.blur();
+      });
 
       lockBtn.addEventListener('click', ()=>{
         if (mode !== 'target') return;
@@ -782,7 +841,10 @@
       input.disabled = (mode === 'target') && locked[i];
       document.getElementById('minus-'+i).disabled = input.disabled;
       document.getElementById('plus-'+i).disabled = input.disabled;
-      readout.textContent = fmtPct(r);
+      readout.disabled = input.disabled;
+      if (document.activeElement !== readout){
+        readout.value = r.toFixed(2);
+      }
       wageMini.textContent = fmtMoney(wages[i+1]);
       lockBtn.classList.toggle('active', locked[i]);
       lockBtn.setAttribute('aria-pressed', locked[i] ? 'true' : 'false');
@@ -821,6 +883,8 @@
   baseWageEl.addEventListener('input', render);
   targetPctEl.addEventListener('input', ()=>{
     if (mode !== 'target') return;
+    const clamped = clamp(parseFloat(targetPctEl.value) || 0, 0, 100);
+    if (String(clamped) !== targetPctEl.value) targetPctEl.value = clamped;
     rebalance(currentFixedIdxs());
     render();
   });
