@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Raise Console — 4-Year Wage Compounding Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef4f8;
+    --bg-panel:#ffffff;
+    --bg-panel-2:#f2f6fa;
+    --ink:#0d2b3e;
+    --ink-dim:#5c7688;
+    --blue:#005f8c;
+    --blue-deep:#003b57;
+    --red:#ed3e43;
+    --red-glow:rgba(237,62,67,0.28);
+    --blue-glow:rgba(0,95,140,0.18);
+    --rule:rgba(0,59,87,0.10);
+    --rule-strong:rgba(0,59,87,0.22);
+    --shadow:0 1px 2px rgba(0,59,87,0.06), 0 6px 18px rgba(0,59,87,0.06);
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(0,95,140,0.05), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:32px 20px 64px;
+  }
+
+  .page{
+    max-width:920px;
+    margin:0 auto;
+  }
+
+  header{
+    margin-bottom:24px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    color:var(--red);
+    text-transform:uppercase;
+    margin-bottom:10px;
+    display:inline-block;
+    padding-bottom:8px;
+    border-bottom:3px solid var(--red);
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(32px,5vw,46px);
+    margin:14px 0 10px;
+    letter-spacing:-0.01em;
+    color:var(--blue-deep);
+  }
+  .sub{
+    color:var(--ink-dim);
+    font-size:15px;
+    line-height:1.55;
+    max-width:60ch;
+    margin:0;
+  }
+
+  /* ---- Mode switch ---- */
+  .mode-switch{
+    display:inline-flex;
+    background:var(--bg-panel-2);
+    border:1px solid var(--rule-strong);
+    border-radius:10px;
+    padding:4px;
+    margin:18px 0 0;
+    gap:4px;
+  }
+  .mode-switch button{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:500;
+    background:transparent;
+    border:none;
+    color:var(--ink-dim);
+    padding:9px 16px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .mode-switch button.active{
+    background:var(--blue);
+    color:#ffffff;
+  }
+
+  /* ---- Top controls ---- */
+  .controls-top{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    align-items:flex-end;
+    background:var(--bg-panel);
+    border:1px solid var(--rule);
+    box-shadow:var(--shadow);
+    border-radius:14px;
+    padding:20px;
+    margin:20px 0 22px;
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .field label{
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    font-weight:500;
+  }
+  .field .input-wrap{
+    display:flex;
+    align-items:center;
+    background:var(--bg-panel-2);
+    border:1px solid var(--rule-strong);
+    border-radius:8px;
+    padding:8px 12px;
+    gap:6px;
+  }
+  .field .input-wrap.readout-mode{
+    border-color:var(--blue);
+  }
+  .field input{
+    background:transparent;
+    border:none;
+    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:15px;
+    width:110px;
+    outline:none;
+  }
+  .field input:disabled{
+    color:var(--blue-deep);
+    font-weight:600;
+    -webkit-text-fill-color:var(--blue-deep);
+    opacity:1;
+  }
+  .field .unit{
+    color:var(--ink-dim);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+  }
+  .field input:focus-visible, button:focus-visible, .lockbtn:focus-visible{
+    outline:2px solid var(--blue);
+    outline-offset:2px;
+  }
+
+  #resetBtn{
+    margin-left:auto;
+    background:transparent;
+    border:1px solid var(--rule-strong);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:500;
+    padding:10px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  #resetBtn:hover{ border-color:var(--blue); color:var(--blue); }
+
+  /* ---- Rack / fader bank ---- */
+  .rack-wrap{
+    background:var(--bg-panel);
+    border:1px solid var(--rule);
+    box-shadow:var(--shadow);
+    border-radius:14px;
+    padding:26px 20px 20px;
+    margin-bottom:22px;
+  }
+  .rack-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin:0 0 18px;
+  }
+  .rack{
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    padding-bottom:6px;
+    justify-content:space-between;
+  }
+  .channel{
+    flex:1 1 0;
+    min-width:100px;
+    background:var(--bg-panel-2);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:14px 8px 16px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+  }
+  .channel.is-locked{
+    border-color:var(--red);
+    box-shadow:0 0 0 1px var(--red-glow) inset;
+  }
+  .channel-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.02em;
+    color:var(--ink-dim);
+    text-transform:uppercase;
+    text-align:center;
+    line-height:1.3;
+    min-height:28px;
+  }
+  .readout{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:18px;
+    font-weight:600;
+    color:var(--blue);
+    min-height:24px;
+  }
+  .fader-track{
+    position:relative;
+    height:180px;
+    width:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .fader-track input[type="range"]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:180px;
+    height:6px;
+    background:transparent;
+    transform:rotate(-90deg);
+    margin:0;
+    cursor:pointer;
+  }
+  .fader-track input[type="range"]::-webkit-slider-runnable-track{
+    height:6px;
+    border-radius:3px;
+    background:linear-gradient(90deg, var(--blue), var(--rule-strong));
+  }
+  .fader-track input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:22px;
+    height:14px;
+    border-radius:4px;
+    background:var(--red);
+    border:2px solid #ffffff;
+    box-shadow:0 0 0 1px var(--rule-strong), 0 2px 6px var(--red-glow);
+    margin-top:-4px;
+    cursor:grab;
+  }
+  .fader-track input[type="range"]::-moz-range-track{
+    height:6px;
+    border-radius:3px;
+    background:linear-gradient(90deg, var(--blue), var(--rule-strong));
+  }
+  .fader-track input[type="range"]::-moz-range-thumb{
+    width:20px;
+    height:14px;
+    border-radius:4px;
+    background:var(--red);
+    border:2px solid #ffffff;
+    box-shadow:0 0 0 1px var(--rule-strong), 0 2px 6px var(--red-glow);
+    cursor:grab;
+  }
+  .fader-track input[type="range"]:disabled::-webkit-slider-thumb{
+    background:var(--ink-dim);
+    box-shadow:none;
+    cursor:not-allowed;
+  }
+  .fader-track input[type="range"]:disabled::-moz-range-thumb{
+    background:var(--ink-dim);
+    box-shadow:none;
+    cursor:not-allowed;
+  }
+
+  .wage-mini{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+  }
+
+  .stepper{
+    display:flex;
+    gap:6px;
+  }
+  .stepbtn{
+    width:40px;
+    height:40px;
+    flex-shrink:0;
+    border-radius:8px;
+    border:1px solid var(--rule-strong);
+    background:var(--bg-panel);
+    color:var(--blue);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:18px;
+    font-weight:600;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s;
+  }
+  .stepbtn:hover{
+    border-color:var(--blue);
+    background:var(--blue);
+    color:#ffffff;
+  }
+  .stepbtn:disabled{
+    color:var(--ink-dim);
+    border-color:var(--rule);
+    background:var(--bg-panel-2);
+    cursor:not-allowed;
+  }
+  .stepbtn:active:not(:disabled){
+    transform:scale(0.94);
+  }
+
+  .lockbtn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    background:transparent;
+    border:1px solid var(--rule-strong);
+    color:var(--ink-dim);
+    border-radius:6px;
+    padding:5px 10px;
+    cursor:pointer;
+    transition:all .15s;
+    width:100%;
+  }
+  .lockbtn.active{
+    border-color:var(--red);
+    color:var(--red);
+    background:rgba(237,62,67,0.08);
+  }
+  .rack.mode-calculate .lockbtn{
+    display:none;
+  }
+
+  /* ---- Status ---- */
+  .status-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px solid var(--rule);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+  }
+  .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--blue);
+    flex-shrink:0;
+  }
+  .dot.off{ background:var(--red); }
+  .status-row .label{ color:var(--ink-dim); }
+  .status-row .value{ color:var(--ink); font-weight:600; }
+
+  /* ---- Ledger ---- */
+  .ledger{
+    background:var(--bg-panel);
+    border:1px solid var(--rule);
+    box-shadow:var(--shadow);
+    border-radius:14px;
+    padding:22px 20px;
+    margin-bottom:22px;
+  }
+  .ledger h2{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:20px;
+    margin:0 0 16px;
+    color:var(--blue-deep);
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+  }
+  th{
+    text-align:left;
+    color:var(--ink-dim);
+    font-weight:500;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    font-size:11px;
+    padding:0 10px 10px;
+    border-bottom:1px solid var(--rule-strong);
+  }
+  th:not(:first-child), td:not(:first-child){ text-align:right; }
+  td{
+    padding:10px;
+    border-bottom:1px solid var(--rule);
+    color:var(--ink);
+  }
+  tr:last-child td{
+    border-bottom:none;
+    font-weight:600;
+    color:var(--blue);
+  }
+
+  /* ---- Chart ---- */
+  .chart-wrap{
+    background:var(--bg-panel);
+    border:1px solid var(--rule);
+    box-shadow:var(--shadow);
+    border-radius:14px;
+    padding:22px 20px 12px;
+    margin-bottom:22px;
+  }
+  .chart-wrap h2{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:20px;
+    margin:0 0 6px;
+    color:var(--blue-deep);
+  }
+  svg{ width:100%; height:auto; display:block; }
+  .chart-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    fill:var(--ink-dim);
+  }
+
+  .copy-row{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:8px;
+  }
+  #copyBtn{
+    background:transparent;
+    border:1px solid var(--rule-strong);
+    color:var(--blue);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:500;
+    padding:9px 14px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  #copyBtn:hover{ border-color:var(--blue); }
+
+  @media (max-width:640px){
+    .fader-track{ height:130px; }
+    .fader-track input[type="range"]{ width:130px; }
+    .channel{ min-width:80px; }
+  }
+
+  @media (prefers-reduced-motion:no-preference){
+    .channel{
+      animation: rise .5s ease both;
+    }
+    .channel:nth-child(1){animation-delay:.02s}
+    .channel:nth-child(2){animation-delay:.08s}
+    .channel:nth-child(3){animation-delay:.14s}
+    .channel:nth-child(4){animation-delay:.20s}
+    .channel:nth-child(5){animation-delay:.26s}
+    @keyframes rise{
+      from{opacity:0; transform:translateY(14px);}
+      to{opacity:1; transform:translateY(0);}
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">4-Year Wage Projection</div>
+    <h1>The Raise Console</h1>
+    <p class="sub" id="introText">Set a starting wage and a target total increase. Balance five raises on the fader bank below — move one, and the unlocked faders redistribute to keep the compound total on target. Lock a year once it's settled, then tune the rest.</p>
+    <div class="mode-switch" role="group" aria-label="Choose mode">
+      <button id="modeTargetBtn" class="active">Hit a target</button>
+      <button id="modeCalcBtn">Just calculate</button>
+    </div>
+  </header>
+
+  <div class="controls-top">
+    <div class="field">
+      <label for="baseWage">Starting wage</label>
+      <div class="input-wrap">
+        <span class="unit">$</span>
+        <input id="baseWage" type="number" value="70000" step="1000" min="0">
+      </div>
+    </div>
+    <div class="field">
+      <label for="targetPct" id="targetLabel">Target total increase (4 yrs)</label>
+      <div class="input-wrap" id="targetWrap">
+        <input id="targetPct" type="number" value="20" step="1">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <button id="resetBtn">Reset to even split</button>
+  </div>
+
+  <div class="rack-wrap">
+    <p class="rack-title">Fader Bank — Raise %</p>
+    <div class="rack" id="rack"></div>
+    <div class="status-row">
+      <span class="dot" id="statusDot"></span>
+      <span class="label" id="statusLabel">Compounded total:</span>
+      <span class="value" id="statusValue">—</span>
+    </div>
+  </div>
+
+  <div class="ledger">
+    <h2>Ledger</h2>
+    <table>
+      <thead>
+        <tr><th>Point</th><th>Wage</th><th>Raise</th></tr>
+      </thead>
+      <tbody id="ledgerBody"></tbody>
+    </table>
+  </div>
+
+  <div class="chart-wrap">
+    <h2>Growth curve</h2>
+    <svg id="chart" viewBox="0 0 640 220" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="copy-row">
+      <button id="copyBtn">Copy summary</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const YEAR_LABELS = ["Immediate GWI","March 2027","March 2028","March 2029","March 2030"];
+  const MIN_RATE = -20;   // %
+  const MAX_RATE = 60;    // %
+  const MIN_FACTOR = 1 + MIN_RATE/100;
+  const MAX_FACTOR = 1 + MAX_RATE/100;
+
+  let mode = 'target'; // 'target' | 'calculate'
+  let rates = [0,0,0,0,0];     // percentage per slider
+  let locked = [false,false,false,false,false];
+
+  const baseWageEl = document.getElementById('baseWage');
+  const targetPctEl = document.getElementById('targetPct');
+  const targetLabel = document.getElementById('targetLabel');
+  const targetWrap = document.getElementById('targetWrap');
+  const rackEl = document.getElementById('rack');
+  const ledgerBody = document.getElementById('ledgerBody');
+  const statusDot = document.getElementById('statusDot');
+  const statusLabel = document.getElementById('statusLabel');
+  const statusValue = document.getElementById('statusValue');
+  const chartSvg = document.getElementById('chart');
+  const copyBtn = document.getElementById('copyBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const modeTargetBtn = document.getElementById('modeTargetBtn');
+  const modeCalcBtn = document.getElementById('modeCalcBtn');
+  const introText = document.getElementById('introText');
+
+  function factorOf(rate){ return 1 + rate/100; }
+  function rateOf(factor){ return (factor - 1) * 100; }
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+  function targetMultiplier(){ return 1 + (parseFloat(targetPctEl.value) || 0) / 100; }
+
+  function evenSplit(){
+    const M = targetMultiplier();
+    const f = Math.pow(M, 1/5);
+    rates = rates.map(()=> rateOf(f));
+    locked = [false,false,false,false,false];
+  }
+
+  function rebalance(fixedIdxs){
+    const M = targetMultiplier();
+    const allIdx = [0,1,2,3,4];
+    const freeIdx = allIdx.filter(i => !fixedIdxs.includes(i));
+    const fixedProduct = fixedIdxs.reduce((p,i)=> p * factorOf(rates[i]), 1);
+
+    if (freeIdx.length === 0) return;
+
+    let remaining = M / fixedProduct;
+    let eachFactor = Math.pow(remaining, 1/freeIdx.length);
+    eachFactor = clamp(eachFactor, MIN_FACTOR, MAX_FACTOR);
+    freeIdx.forEach(i => { rates[i] = rateOf(eachFactor); });
+  }
+
+  function currentFixedIdxs(excludeMoved){
+    const idxs = [];
+    locked.forEach((l,i)=>{ if(l) idxs.push(i); });
+    if (excludeMoved !== undefined && !idxs.includes(excludeMoved)) idxs.push(excludeMoved);
+    return idxs;
+  }
+
+  function achievedMultiplier(){
+    return rates.reduce((p,r)=> p * factorOf(r), 1);
+  }
+
+  function fmtPct(x, digits){
+    digits = digits === undefined ? 2 : digits;
+    const sign = x > 0 ? '+' : '';
+    return sign + x.toFixed(digits) + '%';
+  }
+  function fmtMoney(x){
+    return '$' + Math.round(x).toLocaleString('en-US');
+  }
+
+  function setMode(newMode){
+    mode = newMode;
+    modeTargetBtn.classList.toggle('active', mode==='target');
+    modeCalcBtn.classList.toggle('active', mode==='calculate');
+    rackEl.classList.toggle('mode-calculate', mode==='calculate');
+
+    if (mode === 'target'){
+      introText.textContent = "Set a starting wage and a target total increase. Balance five raises on the fader bank below — move one, and the unlocked faders redistribute to keep the compound total on target. Lock a year once it's settled, then tune the rest.";
+      targetLabel.textContent = 'Target total increase (4 yrs)';
+      targetPctEl.disabled = false;
+      targetWrap.classList.remove('readout-mode');
+      resetBtn.textContent = 'Reset to even split';
+      statusLabel.textContent = 'Compounded total:';
+      rebalance(currentFixedIdxs());
+    } else {
+      introText.textContent = "Move each fader freely to whatever raise you expect for that period — nothing redistributes. The total compound increase over the 4-year period is calculated live below.";
+      targetLabel.textContent = 'Calculated total increase (4 yrs)';
+      targetPctEl.disabled = true;
+      targetWrap.classList.add('readout-mode');
+      resetBtn.textContent = 'Reset to 0%';
+      statusLabel.textContent = 'Compounded total:';
+      locked = [false,false,false,false,false];
+    }
+    render();
+  }
+
+  function buildRack(){
+    rackEl.innerHTML = '';
+    YEAR_LABELS.forEach((label, i)=>{
+      const channel = document.createElement('div');
+      channel.className = 'channel';
+      channel.id = 'channel-' + i;
+
+      const lbl = document.createElement('div');
+      lbl.className = 'channel-label';
+      lbl.textContent = label;
+
+      const readout = document.createElement('div');
+      readout.className = 'readout';
+      readout.id = 'readout-' + i;
+
+      const track = document.createElement('div');
+      track.className = 'fader-track';
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = MIN_RATE;
+      input.max = MAX_RATE;
+      input.step = 0.25;
+      input.id = 'slider-' + i;
+      track.appendChild(input);
+
+      const stepper = document.createElement('div');
+      stepper.className = 'stepper';
+      const minusBtn = document.createElement('button');
+      minusBtn.className = 'stepbtn';
+      minusBtn.id = 'minus-' + i;
+      minusBtn.textContent = '−';
+      minusBtn.setAttribute('aria-label', 'Decrease ' + label + ' by 0.25%');
+      minusBtn.type = 'button';
+      const plusBtn = document.createElement('button');
+      plusBtn.className = 'stepbtn';
+      plusBtn.id = 'plus-' + i;
+      plusBtn.textContent = '+';
+      plusBtn.setAttribute('aria-label', 'Increase ' + label + ' by 0.25%');
+      plusBtn.type = 'button';
+      stepper.appendChild(minusBtn);
+      stepper.appendChild(plusBtn);
+
+      const wageMini = document.createElement('div');
+      wageMini.className = 'wage-mini';
+      wageMini.id = 'wagemini-' + i;
+
+      const lockBtn = document.createElement('button');
+      lockBtn.className = 'lockbtn';
+      lockBtn.id = 'lock-' + i;
+      lockBtn.textContent = 'Lock';
+      lockBtn.setAttribute('aria-pressed','false');
+
+      channel.appendChild(lbl);
+      channel.appendChild(readout);
+      channel.appendChild(track);
+      channel.appendChild(stepper);
+      channel.appendChild(wageMini);
+      channel.appendChild(lockBtn);
+      rackEl.appendChild(channel);
+
+      input.addEventListener('input', ()=>{
+        rates[i] = parseFloat(input.value);
+        if (mode === 'target'){
+          rebalance(currentFixedIdxs(i));
+        }
+        render();
+      });
+
+      minusBtn.addEventListener('click', ()=> stepSlider(i, -0.25));
+      plusBtn.addEventListener('click', ()=> stepSlider(i, 0.25));
+
+      lockBtn.addEventListener('click', ()=>{
+        if (mode !== 'target') return;
+        locked[i] = !locked[i];
+        render();
+      });
+    });
+  }
+
+  function stepSlider(i, delta){
+    if (mode === 'target' && locked[i]) return;
+    rates[i] = clamp(rates[i] + delta, MIN_RATE, MAX_RATE);
+    if (mode === 'target'){
+      rebalance(currentFixedIdxs(i));
+    }
+    render();
+  }
+
+  function drawChart(wages){
+    const w = 640, h = 220, padL = 46, padR = 20, padT = 20, padB = 30;
+    const max = Math.max(...wages) * 1.05;
+    const min = Math.min(...wages) * 0.97;
+    const xStep = (w - padL - padR) / (wages.length - 1);
+    const yScale = v => padT + (h - padT - padB) * (1 - (v - min) / (max - min || 1));
+
+    let path = '';
+    let dots = '';
+    let labels = '';
+    const pointLabels = ['Start','Now','Yr 1','Yr 2','Yr 3','Yr 4'];
+    wages.forEach((v,i)=>{
+      const x = padL + i * xStep;
+      const y = yScale(v);
+      path += (i===0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+      dots += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4" fill="var(--red)" stroke="#ffffff" stroke-width="2"/>';
+      labels += '<text class="chart-label" x="'+x.toFixed(1)+'" y="'+(h-8)+'" text-anchor="middle">'+pointLabels[i]+'</text>';
+    });
+
+    let grid = '';
+    for(let g=0; g<=3; g++){
+      const y = padT + (h-padT-padB) * (g/3);
+      grid += '<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(w-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--rule)" stroke-width="1"/>';
+    }
+
+    chartSvg.innerHTML =
+      grid +
+      '<path d="'+path.trim()+'" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+      dots + labels;
+  }
+
+  function render(){
+    const base = parseFloat(baseWageEl.value) || 0;
+    const wages = [base];
+    rates.forEach(r=>{ wages.push(wages[wages.length-1] * factorOf(r)); });
+
+    rates.forEach((r,i)=>{
+      const input = document.getElementById('slider-'+i);
+      const readout = document.getElementById('readout-'+i);
+      const wageMini = document.getElementById('wagemini-'+i);
+      const lockBtn = document.getElementById('lock-'+i);
+      const channel = document.getElementById('channel-'+i);
+
+      input.value = r;
+      input.disabled = (mode === 'target') && locked[i];
+      document.getElementById('minus-'+i).disabled = input.disabled;
+      document.getElementById('plus-'+i).disabled = input.disabled;
+      readout.textContent = fmtPct(r);
+      wageMini.textContent = fmtMoney(wages[i+1]);
+      lockBtn.classList.toggle('active', locked[i]);
+      lockBtn.setAttribute('aria-pressed', locked[i] ? 'true' : 'false');
+      lockBtn.textContent = locked[i] ? 'Locked' : 'Lock';
+      channel.classList.toggle('is-locked', mode==='target' && locked[i]);
+    });
+
+    const rowLabels = ['Start (base)', ...YEAR_LABELS];
+    ledgerBody.innerHTML = '';
+    wages.forEach((w,i)=>{
+      const tr = document.createElement('tr');
+      const raiseCell = i===0 ? '—' : fmtPct(rates[i-1]);
+      tr.innerHTML = '<td>'+rowLabels[i]+'</td><td>'+fmtMoney(w)+'</td><td>'+raiseCell+'</td>';
+      ledgerBody.appendChild(tr);
+    });
+
+    const achieved = achievedMultiplier();
+    const achievedPctVal = (achieved-1)*100;
+
+    if (mode === 'target'){
+      const M = targetMultiplier();
+      const targetPctVal = (M-1)*100;
+      const diff = achievedPctVal - targetPctVal;
+      const onTarget = Math.abs(diff) < 0.15;
+      statusDot.classList.toggle('off', !onTarget);
+      statusValue.textContent = fmtPct(achievedPctVal, 2) + (onTarget ? ' — on target' : '  (target ' + fmtPct(targetPctVal,2) + ', off by ' + diff.toFixed(2) + ' pts — fader range limit reached)');
+    } else {
+      statusDot.classList.remove('off');
+      statusValue.textContent = fmtPct(achievedPctVal, 2);
+      targetPctEl.value = achievedPctVal.toFixed(2);
+    }
+
+    drawChart(wages);
+  }
+
+  baseWageEl.addEventListener('input', render);
+  targetPctEl.addEventListener('input', ()=>{
+    if (mode !== 'target') return;
+    rebalance(currentFixedIdxs());
+    render();
+  });
+  resetBtn.addEventListener('click', ()=>{
+    if (mode === 'target'){
+      evenSplit();
+    } else {
+      rates = [0,0,0,0,0];
+    }
+    render();
+  });
+  modeTargetBtn.addEventListener('click', ()=> setMode('target'));
+  modeCalcBtn.addEventListener('click', ()=> setMode('calculate'));
+
+  copyBtn.addEventListener('click', ()=>{
+    const base = parseFloat(baseWageEl.value)||0;
+    const wages = [base];
+    rates.forEach(r=>{ wages.push(wages[wages.length-1]*factorOf(r)); });
+    const achievedPctVal = (achievedMultiplier()-1)*100;
+    const lines = [
+      'Wage projection — starting at ' + fmtMoney(base) + ', total 4-year increase ' + fmtPct(achievedPctVal,2) + ':',
+      ...YEAR_LABELS.map((label,i)=> label + ': ' + fmtPct(rates[i]) + '  →  ' + fmtMoney(wages[i+1]))
+    ];
+    const text = lines.join('\n');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(()=>{
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(()=> copyBtn.textContent = 'Copy summary', 1500);
+      });
+    }
+  });
+
+  buildRack();
+  evenSplit();
+  render();
+})();
+</script>
+</body>
+</html>
